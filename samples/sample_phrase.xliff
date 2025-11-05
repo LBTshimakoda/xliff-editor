@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:m="http://www.memsource.com/mxlf/2.0">
+  <file original="document.docx" source-language="en" target-language="fr" datatype="x-text/x-msdoc" m:documentId="abc123">
+    <header>
+      <m:project-id>proj_456</m:project-id>
+      <m:job-id>job_789</m:job-id>
+    </header>
+    <body>
+      <trans-unit id="1" m:confirmed="false" m:locked="false">
+        <source>Welcome to <bpt id="1" ctype="bold">&lt;b&gt;</bpt>Phrase<ept id="1">&lt;/b&gt;</ept> platform.</source>
+        <target state="translated" m:score="100">Bienvenue sur la plateforme <bpt id="1" ctype="bold">&lt;b&gt;</bpt>Phrase<ept id="1">&lt;/b&gt;</ept>.</target>
+        <note>Translation from TM</note>
+      </trans-unit>
+      
+      <trans-unit id="2" m:confirmed="true" m:locked="false">
+        <source>Click <ph id="1" ctype="x-button">{button}</ph> to continue.</source>
+        <target state="final">Cliquez sur <ph id="1" ctype="x-button">{button}</ph> pour continuer.</target>
+      </trans-unit>
+      
+      <trans-unit id="3" m:confirmed="false" m:locked="false">
+        <source>Your <bpt id="2" ctype="underline">&lt;u&gt;</bpt>account settings<ept id="2">&lt;/u&gt;</ept> have been updated.</source>
+        <target state="needs-review-translation">Vos <bpt id="2" ctype="underline">&lt;u&gt;</bpt>paramètres de compte<ept id="2">&lt;/u&gt;</ept> ont été mis à jour.</target>
+      </trans-unit>
+      
+      <trans-unit id="4">
+        <source>Processing <ph id="3" ctype="x-variable">{count}</ph> items...</source>
+        <target state="new"></target>
+        <note>Untranslated</note>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

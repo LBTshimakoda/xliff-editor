@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:mq="MQXliff">
+  <file original="project.docx" source-language="en-GB" target-language="es-ES" datatype="x-mqdocument" mq:version="8.5">
+    <header>
+      <mq:meta>
+        <mq:project-name>Marketing Campaign</mq:project-name>
+        <mq:document-id>doc_001</mq:document-id>
+      </mq:meta>
+    </header>
+    <body>
+      <trans-unit id="1" mq:status="Confirmed">
+        <source>Welcome to <bpt id="1" ctype="bold">&lt;b&gt;</bpt>memoQ<ept id="1">&lt;/b&gt;</ept> translation software.</source>
+        <target state="signed-off">Bienvenido al software de traducción <bpt id="1" ctype="bold">&lt;b&gt;</bpt>memoQ<ept id="1">&lt;/b&gt;</ept>.</target>
+        <mq:match-rate>102</mq:match-rate>
+      </trans-unit>
+      
+      <trans-unit id="2" mq:status="Edited">
+        <source>Please verify <ph id="1" ctype="x-field">{field_name}</ph> before submitting.</source>
+        <target state="translated">Por favor, verifique <ph id="1" ctype="x-field">{field_name}</ph> antes de enviar.</target>
+        <mq:match-rate>95</mq:match-rate>
+      </trans-unit>
+      
+      <trans-unit id="3" mq:status="Locked">
+        <source>COPYRIGHT_NOTICE_2024</source>
+        <target>COPYRIGHT_NOTICE_2024</target>
+        <note>Do not translate</note>
+      </trans-unit>
+      
+      <trans-unit id="4" mq:status="Unconfirmed">
+        <source>The <bpt id="2" ctype="italic">&lt;i&gt;</bpt>latest version<ept id="2">&lt;/i&gt;</ept> is now available.</source>
+        <target state="needs-review-translation">La <bpt id="2" ctype="italic">&lt;i&gt;</bpt>última versión<ept id="2">&lt;/i&gt;</ept> ya está disponible.</target>
+      </trans-unit>
+      
+      <trans-unit id="5">
+        <source>Download now</source>
+        <target state="new"></target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

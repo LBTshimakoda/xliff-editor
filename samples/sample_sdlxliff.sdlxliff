@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:sdl="http://sdl.com/FileTypes/SdlXliff/1.0">
+  <file original="sample.docx" source-language="en-US" target-language="de-DE" datatype="x-sdlfilterframework2">
+    <header>
+      <sdl:filetype-id>SDL Generic Filetype</sdl:filetype-id>
+    </header>
+    <body>
+      <trans-unit id="1" sdl:seg-defs="1">
+        <source>Welcome to <bpt id="1" ctype="bold">&lt;b&gt;</bpt>SDL Trados<ept id="1">&lt;/b&gt;</ept> Studio.</source>
+        <target state="translated">Willkommen bei <bpt id="1" ctype="bold">&lt;b&gt;</bpt>SDL Trados<ept id="1">&lt;/b&gt;</ept> Studio.</target>
+        <sdl:seg-defs>
+          <sdl:seg id="1" conf="Translated" origin="tm"/>
+        </sdl:seg-defs>
+      </trans-unit>
+      
+      <trans-unit id="2" sdl:seg-defs="2">
+        <source>Please save your work before <ph id="1" ctype="x-link">{closing}</ph> the application.</source>
+        <target state="needs-translation"></target>
+        <sdl:seg-defs>
+          <sdl:seg id="2" conf="Draft"/>
+        </sdl:seg-defs>
+      </trans-unit>
+      
+      <trans-unit id="3" sdl:seg-defs="3" translate="no">
+        <source>API_KEY_12345</source>
+        <target>API_KEY_12345</target>
+        <sdl:seg-defs>
+          <sdl:seg id="3" conf="Unspecified" locked="true"/>
+        </sdl:seg-defs>
+      </trans-unit>
+      
+      <trans-unit id="4">
+        <source>The <bpt id="2" ctype="italic">&lt;i&gt;</bpt>quick brown fox<ept id="2">&lt;/i&gt;</ept> jumps over the lazy dog.</source>
+        <target state="translated">Der <bpt id="2" ctype="italic">&lt;i&gt;</bpt>schnelle braune Fuchs<ept id="2">&lt;/i&gt;</ept> springt über den faulen Hund.</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
