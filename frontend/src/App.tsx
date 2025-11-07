@@ -41,11 +41,12 @@ interface XliffDocument {
 const API_BASE = 'http://localhost:8000';
 
 export default function XliffEditor() {
-  const [document, setDocument] = useState<XliffDocument | null>(null);
+  const [xliffDocument, setXliffDocument] = useState<XliffDocument | null>(null);
   const [selectedTransUnit, setSelectedTransUnit] = useState<{fileIndex: number, tuIndex: number} | null>(null);
   const [expandedFiles, setExpandedFiles] = useState<Set<number>>(new Set());
   const [uploading, setUploading] = useState(false);
   const [hideEmptySources, setHideEmptySources] = useState(true);
+  const [editingTarget, setEditingTarget] = useState<string>('');
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +69,7 @@ export default function XliffEditor() {
       }
 
       const data: XliffDocument = await response.json();
-      setDocument(data);
+      setXliffDocument(data);
       setExpandedFiles(new Set([0]));
       
       if (file.name.toLowerCase().endsWith('.xlz')) {
@@ -92,15 +93,86 @@ export default function XliffEditor() {
   const handleDownload = async () => {
     try {
       const response = await fetch(`${API_BASE}/download`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'modified.xliff';
+      
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'modified.xliff';
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      a.download = filename;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      console.log(`File downloaded successfully: ${filename}`);
     } catch (error) {
+      console.error('Failed to download file:', error);
       alert('Failed to download file: ' + error);
+    }
+  };
+
+  const handleTargetChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditingTarget(e.target.value);
+  };
+
+  const handleSaveTarget = async () => {
+    if (!selectedTransUnit || !xliffDocument) return;
+    
+    const selectedTU = xliffDocument.files[selectedTransUnit.fileIndex].trans_units[selectedTransUnit.tuIndex];
+    
+    try {
+      const response = await fetch(`${API_BASE}/trans-unit`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_index: selectedTransUnit.fileIndex,
+          trans_unit_id: selectedTU.id,
+          target_text: editingTarget,
+          target_tags: selectedTU.target?.tags || []
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save changes');
+      }
+      
+      // Update local state
+      const updatedDoc = { ...xliffDocument };
+      const targetTU = updatedDoc.files[selectedTransUnit.fileIndex].trans_units[selectedTransUnit.tuIndex];
+      
+      if (!targetTU.target) {
+        targetTU.target = {
+          text: editingTarget,
+          tags: []
+        };
+      } else {
+        targetTU.target.text = editingTarget;
+      }
+      
+      setXliffDocument(updatedDoc);
+      
+      console.log('Target saved successfully');
+    } catch (error) {
+      console.error('Failed to save target:', error);
+      alert('Failed to save changes: ' + error);
     }
   };
 
@@ -119,13 +191,25 @@ export default function XliffEditor() {
     return transUnits.filter(tu => tu.source?.text && tu.source.text.trim().length > 0);
   };
 
+  // Initialize editing text when trans-unit changes
+  useEffect(() => {
+    if (selectedTransUnit && xliffDocument) {
+      const selectedTU = xliffDocument.files[selectedTransUnit.fileIndex].trans_units[selectedTransUnit.tuIndex];
+      if (selectedTU?.target) {
+        setEditingTarget(selectedTU.target.text);
+      } else {
+        setEditingTarget('');
+      }
+    }
+  }, [selectedTransUnit, xliffDocument]);
+
   useEffect(() => {
     const getAllFilteredTransUnits = () => {
-      if (!document) return [];
+      if (!xliffDocument) return [];
       
       const allUnits: Array<{fileIndex: number, tuIndex: number, originalIndex: number}> = [];
       
-      document.files.forEach((file, fileIndex) => {
+      xliffDocument.files.forEach((file, fileIndex) => {
         file.trans_units.forEach((tu, originalIndex) => {
           if (!hideEmptySources || (tu.source?.text && tu.source.text.trim().length > 0)) {
             allUnits.push({ fileIndex, tuIndex: allUnits.length, originalIndex });
@@ -137,7 +221,7 @@ export default function XliffEditor() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!document || !selectedTransUnit) return;
+      if (!xliffDocument || !selectedTransUnit) return;
       
       const allUnits = getAllFilteredTransUnits();
       if (allUnits.length === 0) return;
@@ -168,19 +252,19 @@ export default function XliffEditor() {
       });
       
       setTimeout(() => {
-        const element = globalThis.document.getElementById(`tu-${newUnit.fileIndex}-${newUnit.originalIndex}`);
+        const element = document.getElementById(`tu-${newUnit.fileIndex}-${newUnit.originalIndex}`);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }, 50);
     };
     
-    globalThis.window.addEventListener('keydown', handleKeyDown);
-    return () => globalThis.window.removeEventListener('keydown', handleKeyDown);
-  }, [document, selectedTransUnit, hideEmptySources]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [xliffDocument, selectedTransUnit, hideEmptySources]);
 
   const selectedTU = selectedTransUnit 
-    ? document?.files[selectedTransUnit.fileIndex]?.trans_units[selectedTransUnit.tuIndex]
+    ? xliffDocument?.files[selectedTransUnit.fileIndex]?.trans_units[selectedTransUnit.tuIndex]
     : null;
 
   const renderTag = (tag: XliffTag) => {
@@ -271,14 +355,14 @@ export default function XliffEditor() {
             {uploading ? 'Uploading...' : 'Upload XLIFF/XLZ'}
             <input
               type="file"
-              accept=".xliff,.xlf,.xlz"
+              accept=".xliff,.xlf,.xlz,.sdlxliff"
               onChange={handleFileUpload}
               className="hidden"
               disabled={uploading}
             />
           </label>
           
-          {document && (
+          {xliffDocument && (
             <label className="flex items-center text-sm text-gray-700 cursor-pointer hover:text-gray-900">
               <input
                 type="checkbox"
@@ -292,14 +376,14 @@ export default function XliffEditor() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
-          {!document ? (
+          {!xliffDocument ? (
             <div className="text-center text-gray-500 mt-8">
               <FileText size={48} className="mx-auto mb-2 opacity-50" />
               <p>Upload an XLIFF file to begin</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {document.files.map((file, fileIdx) => (
+              {xliffDocument.files.map((file, fileIdx) => (
                 <div key={fileIdx} className="border border-gray-200 rounded-lg overflow-hidden">
                   <button
                     onClick={() => toggleFile(fileIdx)}
@@ -345,7 +429,7 @@ export default function XliffEditor() {
           )}
         </div>
 
-        {document && (
+        {xliffDocument && (
           <div className="p-4 border-t border-gray-200">
             <button
               onClick={handleDownload}
@@ -388,7 +472,7 @@ export default function XliffEditor() {
 
               <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Source ({document?.files[selectedTransUnit.fileIndex].source_language})
+                  Source ({xliffDocument?.files[selectedTransUnit.fileIndex].source_language})
                 </label>
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 min-h-[80px]">
                   {renderSegmentWithTags(selectedTU.source)}
@@ -396,15 +480,62 @@ export default function XliffEditor() {
               </div>
 
               <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Target ({document?.files[selectedTransUnit.fileIndex].target_language || 'Not specified'})
-                </label>
-                <div className="bg-white rounded-lg p-4 border-2 border-blue-300 min-h-[120px] focus-within:border-blue-500">
-                  {renderSegmentWithTags(selectedTU.target)}
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Target ({xliffDocument?.files[selectedTransUnit.fileIndex].target_language || 'Not specified'})
+                  </label>
+                  <button
+                    onClick={handleSaveTarget}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Save Changes
+                  </button>
                 </div>
+                
+                {/* Show tags reference */}
+                {selectedTU.target && selectedTU.target.tags.length > 0 && (
+                  <div className="mb-3 p-3 bg-gray-50 rounded border border-gray-200">
+                    <div className="text-xs font-medium text-gray-600 mb-2">Available tags (click to copy):</div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTU.target.tags.map((tag, idx) => (
+                        <code 
+                          key={idx}
+                          className="px-2 py-1 bg-white border border-gray-300 rounded text-xs font-mono cursor-pointer hover:bg-gray-100"
+                          onClick={() => {
+                            const tagMarker = `⟨${tag.tag_type}⟩`;
+                            navigator.clipboard.writeText(tagMarker);
+                          }}
+                          title="Click to copy"
+                        >
+                          ⟨{tag.tag_type}⟩
+                        </code>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Editable textarea */}
+                <textarea
+                  value={editingTarget}
+                  onChange={handleTargetChange}
+                  className="w-full min-h-[120px] p-4 border-2 border-blue-300 rounded-lg focus:border-blue-500 focus:outline-none font-sans resize-y"
+                  placeholder="Enter translation here..."
+                />
+                
+                {/* Preview with rendered tags */}
+                <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200">
+                  <div className="text-xs font-medium text-gray-600 mb-2">Preview:</div>
+                  <div className="text-sm">
+                    {renderSegmentWithTags({
+                      text: editingTarget,
+                      tags: selectedTU?.target?.tags || []
+                    })}
+                  </div>
+                </div>
+                
                 <p className="mt-2 text-xs text-gray-500 flex items-center">
                   <Lock size={12} className="mr-1" />
-                  Tags are locked and cannot be edited
+                  Tags are locked - use the tag markers (⟨tag⟩) in your text
                 </p>
               </div>
 

@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from models import XliffDocument, TransUnitUpdate
@@ -16,6 +16,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 # Store the current XML tree and skeleton files in memory
@@ -23,18 +24,18 @@ current_file_store = {}
 
 @app.get("/")
 async def root():
-    return {"message": "XLIFF Editor API", "version": "1.0", "supports": ["xliff", "xlf", "xlz"]}
+    return {"message": "XLIFF Editor API", "version": "1.0", "supports": ["xliff", "xlf", "xlz", "sdlxliff"]}
 
 @app.post("/upload", response_model=XliffDocument)
 async def upload_xliff(file: UploadFile = File(...)):
     """Upload and parse an XLIFF or XLZ file"""
     filename = file.filename.lower()
     
-    # Check file extension
-    if not (filename.endswith(('.xliff', '.xlf', '.xlz'))):
+    # Check file extension (FIXED: added dot before sdlxliff)
+    if not (filename.endswith(('.xliff', '.xlf', '.xlz', '.sdlxliff'))):
         raise HTTPException(
             status_code=400, 
-            detail="File must be XLIFF (.xliff, .xlf) or XLZ (.xlz)"
+            detail="File must be XLIFF (.xliff, .xlf, .sdlxliff) or XLZ (.xlz)"
         )
     
     try:
@@ -61,7 +62,7 @@ async def upload_xliff(file: UploadFile = File(...)):
         # Store the original XML tree for later updates
         tree = etree.fromstring(content)
         current_file_store['tree'] = tree
-        current_file_store['filename'] = file.filename
+        current_file_store['filename'] = file.filename  # Store original filename with correct case
         
         # Parse and return structured data
         document = XliffParser.parse_file(content)
@@ -109,7 +110,7 @@ async def update_trans_unit(update: TransUnitUpdate):
 
 @app.get("/download")
 async def download_xliff():
-    """Download the modified XLIFF file (as XLIFF or XLZ)"""
+    """Download the modified XLIFF file with original filename and extension"""
     if 'tree' not in current_file_store:
         raise HTTPException(status_code=400, detail="No file to download")
     
@@ -121,6 +122,7 @@ async def download_xliff():
             pretty_print=True
         )
         
+        # Get original filename (preserves case and extension)
         filename = current_file_store.get('filename', 'modified.xliff')
         
         # If original was XLZ, recreate XLZ with skeleton files
@@ -128,7 +130,7 @@ async def download_xliff():
             skeleton_files = current_file_store.get('skeleton_files', {})
             xlz_content = XLZHandler.create_xlz_archive(xml_content, skeleton_files)
             
-            # Change extension to .xlz
+            # Ensure .xlz extension
             if not filename.lower().endswith('.xlz'):
                 filename = filename.rsplit('.', 1)[0] + '.xlz'
             
@@ -140,10 +142,16 @@ async def download_xliff():
                 }
             )
         
-        # Return as XLIFF
+        # Return as XLIFF with appropriate media type based on extension
+        filename_lower = filename.lower()
+        if filename_lower.endswith('.sdlxliff'):
+            media_type = 'application/x-sdlxliff+xml'
+        else:
+            media_type = 'application/x-xliff+xml'
+        
         return Response(
             content=xml_content,
-            media_type='application/x-xliff+xml',
+            media_type=media_type,
             headers={
                 'Content-Disposition': f'attachment; filename="{filename}"'
             }
